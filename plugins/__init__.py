@@ -10,6 +10,7 @@ class CustomPlugin(AirflowPlugin):
     name = "usstock_custom_plugin"
     operators = [
         operators.StageJsonToS3,
+        operators.S3CreateBucket,
     ]
     helpers = [
         helpers.StockSymbols,
