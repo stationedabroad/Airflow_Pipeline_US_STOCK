@@ -5,5 +5,5 @@
                 "pattern": "<td class=\"symb-col\">[A-Za-z0-9.]*</td>\\s*<td class=\"name-col\"><div>.*</div>",
                 "code": [""]
         },
-  "OUTPUT": "output/stock_symbols_{}.csv"
+  "OUTPUT": "plugins/output/stock_symbols_{}.json"
 }

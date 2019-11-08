@@ -8,52 +8,54 @@ import logging
 class StockSymbols:
 	
 	US_STOCK_INDUSTRY_CODES = {
-	    "WSJMXUSAGRI": "Agriculture",
-	    "WSJMXUSAUTO": "Automotive",
-	    "WSJMXUSBSC": "Basic Materials/Resources",
-	    "WSJMXUSCYC": "Business/Consumer Services",
-	    "WSJMXUSNCY": "Consumer Goods",
-	    "WSJMXUSENE": "Energy",
-	    "WSJMXUSFCL": "Financial Services",
-	    "WSJMXUSHCR": "Health Care/Life Sciences",
-	    "WSJMXUSIDU": "Industrial Goods",
-	    "WSJMXUSLEAH": "Leisure/Arts/Hospitality",
-	    "WSJMXUSMENT": "Media/Entertainment",
-	    "WSJMXUSRECN": "Real Estate/Construction",
-	    "WSJMXUSRTWS": "Retail/Wholesale",
-	    "WSJMXUSTEC": "Technology",
-	    "WSJMXUSTEL": "Telecommunication Services",
-	    "WSJMXUSTRSH": "Transportation/Logistics",
-	    "WSJMXUSUTI": "Utilities"
+	    "Agriculture": "WSJMXUSAGRI",
+	    "Automotive": "WSJMXUSAUTO",
+	    "Basic Materials/Resources": "WSJMXUSBSC",
+	    "Business/Consumer Services": "WSJMXUSCYC",
+	    "Consumer Goods": "WSJMXUSNCY",
+	    "Energy": "WSJMXUSENE",
+	    "Financial Services": "WSJMXUSFCL",
+	    "Health Care/Life Sciences": "WSJMXUSHCR",
+	    "Industrial Goods": "WSJMXUSIDU",
+	    "Leisure/Arts/Hospitality": "WSJMXUSLEAH",
+	    "Media/Entertainment": "WSJMXUSMENT",
+	    "Real Estate/Construction": "WSJMXUSRECN",
+	    "Retail/Wholesale": "WSJMXUSRTWS",
+	    "Technology": "WSJMXUSTEC",
+	    "Telecommunication Services": "WSJMXUSTEL",
+	    "Transportation/Logistics": "WSJMXUSTRSH",
+	    "Utilities": "WSJMXUSUTI",
 	    }
 
 	def write_stock_symbols_for_industry(industry):
 
-		with open("config.json", "r") as f:
+		industry_code = StockSymbols.US_STOCK_INDUSTRY_CODES[industry]
+		import os
+		logging.info(f'CONFIG >>>> {os.getcwd()}')
+		with open("plugins/helpers/config.json", "r") as f:
 		    config = json.load(f)
 
 		URL = config['USTOCK']['url']
 		FILE_TO_WRITE = config['OUTPUT']
-
 		matcher = re.compile(r'{}'.format(config['USTOCK']['pattern']))
 
-		ic = industry.replace("/", "_")
-		with open(FILE_TO_WRITE.format(ic), 'w') as f:
+		industry_file = FILE_TO_WRITE.format(industry.replace("/", "_"))
+		with open(industry_file, 'a') as f:
 
-		    logging.info(f'Opened file {US_STOCK_INDUSTRY_CODES[industry]}')
-		    f.write('stock_symbol, company_name\n')
-			
-			page = 0
-			symbols_written = 0
+		    logging.info(f'Opened file {industry}')
+		    # f.write('stock_symbol, company_name\n')
+
+		    page = 0
+		    symbols_written = 0
 
 		    while True:
-		        url = URL.format(code=industry, page=page)
+		        url = URL.format(code=industry_code, page=page)
 		        url_open = req.urlopen(url)
 		        url_bytes = url_open.read()
 		        url_str = url_bytes.decode('utf8')
 		        url_open.close()
-				logging.info(f'url {url} read ...')
-		        
+		        logging.info(f'url {url} read ...')
+
 		        results = matcher.findall(url_str)
 		        if not results:
 		            break
@@ -66,8 +68,9 @@ class StockSymbols:
 		            desc_st = match.find("<div>")+5
 		            desc_ed = match.find("</div>")
 		            desc = match[desc_st:desc_ed]
-		            f.write("{},{}\n".format(symbol_code, desc))
+		            # f.write("{},{}\n".format(symbol_code, desc))
+		            f.write(f'{json.dumps({"symbol_code": symbol_code, "company_name": desc})}\n')
 		            symbols_written += 1
 		        page += 50
-
-			logging.info(f'Symbols written {symbols_written} to {FILE_TO_WRITE.format(ic)}')	    
+		    logging.info(f'Symbols written {symbols_written} to {industry_file}')
+		return industry_file, symbols_written
