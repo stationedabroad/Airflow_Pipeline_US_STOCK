@@ -9,8 +9,6 @@ class StockSymbols(object):
 
 	def __init__(self):
 		# Read config file
-		import os
-		logging.info(f'FILEPATH >>>>>>>> {os.getcwd()}')
 		with open("plugins/helpers/config.json", "r") as f:
 		    self.config = json.load(f)
 
