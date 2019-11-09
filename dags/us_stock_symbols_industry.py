@@ -52,52 +52,122 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
         )
     # Automotive Industry
     automotive_stock_symbols_to_tmp = PythonOperator(
-    	task_id="Fetch_AutomotiveStockSymbols_toTmp",
+    	task_id="Fetch_Automotive_StockSymbols_toTmp",
     	python_callable=write_stock_symbols_to_tmp,
     	op_kwargs={'industry': 'Automotive'}
     	)
 
     # Agriculture Industry
     agriculture_stock_symbols_to_tmp = PythonOperator(
-    	task_id="Fetch_AgricultureStockSymbols_toTmp",
+    	task_id="Fetch_Agriculture_StockSymbols_toTmp",
     	python_callable=write_stock_symbols_to_tmp,
     	op_kwargs={'industry': 'Agriculture'}
     	)
 
     # Basic Materials/Resources Industry
     materials_resources_stock_symbols_to_tmp = PythonOperator(
-    	task_id="Fetch_MaterialsResourcesStockSymbols_toTmp",
+    	task_id="Fetch_Materials_Resources_StockSymbols_toTmp",
     	python_callable=write_stock_symbols_to_tmp,
     	op_kwargs={'industry': 'Basic Materials/Resources'}
     	)
 
     # Business/Consumer Services Industry
     business_consumer_srv_stock_symbols_to_tmp = PythonOperator(
-    	task_id="Fetch_BusinessConsumerSrvStockSymbols_toTmp",
+    	task_id="Fetch_Business_ConsumerSrv_StockSymbols_toTmp",
     	python_callable=write_stock_symbols_to_tmp,
     	op_kwargs={'industry': 'Business/Consumer Services'}
     	)
 
     # Consumer Goods Industry
     consumer_goods_stock_symbols_to_tmp = PythonOperator(
-    	task_id="Fetch_ConsumerGoodsStockSymbols_toTmp",
+    	task_id="Fetch_ConsumerGoods_StockSymbols_toTmp",
     	python_callable=write_stock_symbols_to_tmp,
     	op_kwargs={'industry': 'Consumer Goods'}
     	)
 
     # Energy Industry
     energy_stock_symbols_to_tmp = PythonOperator(
-    	task_id="Fetch_EnergyStockSymbols_toTmp",
+    	task_id="Fetch_Energy_StockSymbols_toTmp",
     	python_callable=write_stock_symbols_to_tmp,
     	op_kwargs={'industry': 'Energy'}
     	)
 
     # Financial Services Industry
     financial_srv_stock_symbols_to_tmp = PythonOperator(
-    	task_id="Fetch_FinancialServicesStockSymbols_toTmp",
+    	task_id="Fetch_FinancialServices_StockSymbols_toTmp",
     	python_callable=write_stock_symbols_to_tmp,
     	op_kwargs={'industry': 'Financial Services'}
     	)    
+
+    # Health-care/Life-sciences Industry
+    healthcare_lifesciences_stock_symbols_to_tmp = PythonOperator(
+    	task_id="Fetch_HealthCare_LifeSciences_StockSymbols_toTmp",
+    	python_callable=write_stock_symbols_to_tmp,
+    	op_kwargs={'industry': 'Health Care/Life Sciences'}
+    	)   
+
+    # Industrial Goods Industry
+    industrial_goods_stock_symbols_to_tmp = PythonOperator(
+    	task_id="Fetch_IndustrialGoods_StockSymbols_toTmp",
+    	python_callable=write_stock_symbols_to_tmp,
+    	op_kwargs={'industry': 'Industrial Goods'}
+    	)
+
+    # Leisure/Arts/Hospitality Industry
+    leisure_arts_hospitality_stock_symbols_to_tmp = PythonOperator(
+    	task_id="Fetch_Leisure_Arts_Hospitality_StockSymbols_toTmp",
+    	python_callable=write_stock_symbols_to_tmp,
+    	op_kwargs={'industry': 'Leisure/Arts/Hospitality'}
+    	)
+
+    # Media/Entertainment Industry
+    media_entertainment_stock_symbols_to_tmp = PythonOperator(
+    	task_id="Fetch_Media_Entertainment_StockSymbols_toTmp",
+    	python_callable=write_stock_symbols_to_tmp,
+    	op_kwargs={'industry': 'Media/Entertainment'}
+    	)
+
+    # Real Estate/Construction Industry
+    real_estate_construction_stock_symbols_to_tmp = PythonOperator(
+    	task_id="Fetch_RealEstate_Construction_StockSymbols_toTmp",
+    	python_callable=write_stock_symbols_to_tmp,
+    	op_kwargs={'industry': 'Real Estate/Construction'}
+    	)
+
+    # Retail/Wholesale Industry
+    retail_wholesale_stock_symbols_to_tmp = PythonOperator(
+    	task_id="Fetch_Retail_Wholesale_StockSymbols_toTmp",
+    	python_callable=write_stock_symbols_to_tmp,
+    	op_kwargs={'industry': 'Retail/Wholesale'}
+    	)  
+
+    # Technology Industry
+    technology_stock_symbols_to_tmp = PythonOperator(
+    	task_id="Fetch_Technology_StockSymbols_toTmp",
+    	python_callable=write_stock_symbols_to_tmp,
+    	op_kwargs={'industry': 'Technology'}
+    	)
+
+    # Telecommunication Services Industry
+    telocommunication_srv_stock_symbols_to_tmp = PythonOperator(
+    	task_id="Fetch_TelecommunicationServices_StockSymbols_toTmp",
+    	python_callable=write_stock_symbols_to_tmp,
+    	op_kwargs={'industry': 'Telecommunication Services'}
+    	)
+
+    # Transportation/Logistics Industry
+    transportation_logistics_stock_symbols_to_tmp = PythonOperator(
+    	task_id="Fetch_Transportation_Logistics_StockSymbols_toTmp",
+    	python_callable=write_stock_symbols_to_tmp,
+    	op_kwargs={'industry': 'Transportation/Logistics'}
+    	)
+
+    # Utilities Industry
+    utilities_stock_symbols_to_tmp = PythonOperator(
+    	task_id="Fetch_Utilities_StockSymbols_toTmp",
+    	python_callable=write_stock_symbols_to_tmp,
+    	op_kwargs={'industry': 'Utilities'}
+    	)
 
     create_execution_date_s3_bucket = S3CreateBucket(
     	task_id="Create_S3Bucket",
@@ -128,3 +198,13 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     start_operator >> consumer_goods_stock_symbols_to_tmp >> create_execution_date_s3_bucket
     start_operator >> energy_stock_symbols_to_tmp >> create_execution_date_s3_bucket
     start_operator >> financial_srv_stock_symbols_to_tmp >> create_execution_date_s3_bucket
+    start_operator >> healthcare_lifesciences_stock_symbols_to_tmp >> create_execution_date_s3_bucket
+    start_operator >> industrial_goods_stock_symbols_to_tmp >> create_execution_date_s3_bucket
+    start_operator >> leisure_arts_hospitality_stock_symbols_to_tmp >> create_execution_date_s3_bucket
+    start_operator >> media_entertainment_stock_symbols_to_tmp >> create_execution_date_s3_bucket
+    start_operator >> real_estate_construction_stock_symbols_to_tmp >> create_execution_date_s3_bucket
+    start_operator >> retail_wholesale_stock_symbols_to_tmp >> create_execution_date_s3_bucket
+    start_operator >> technology_stock_symbols_to_tmp >> create_execution_date_s3_bucket
+    start_operator >> telocommunication_srv_stock_symbols_to_tmp >> create_execution_date_s3_bucket
+    start_operator >> transportation_logistics_stock_symbols_to_tmp >> create_execution_date_s3_bucket
+    start_operator >> utilities_stock_symbols_to_tmp >> create_execution_date_s3_bucket
