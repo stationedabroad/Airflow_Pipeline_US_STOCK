@@ -19,7 +19,7 @@ default_args = {
     'retries': 1,
     'email_on_retry': False,
     'retry_delay': timedelta(minutes=1),
-    'catchup_by_default': False,
+    'catchup_by_default': False ,
 }
 
 stock_symbols = StockSymbols()
@@ -44,6 +44,7 @@ def check_files_written():
 				logging.info(f'Input file {filenm} written OK.')
 		else:
 			raise ValueError(f'Input file {filenm} does not exist!')				
+
 
 with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default_args) as dag:
     # Task 1 - Begin

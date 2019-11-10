@@ -11,6 +11,7 @@ class CustomPlugin(AirflowPlugin):
     operators = [
         operators.StageJsonToS3,
         operators.S3CreateBucket,
+        operators.TiingoPricePerIndustryHistorical,
     ]
     helpers = [
         helpers.StockSymbols,

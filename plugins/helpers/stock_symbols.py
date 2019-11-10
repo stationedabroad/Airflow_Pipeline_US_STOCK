@@ -35,6 +35,7 @@ class StockSymbols(object):
 		    "Utilities": {"code": "WSJMXUSUTI", "filename": self.FILE_TO_WRITE.format("Utilities".replace("/", "_"))}
 		    }
 
+
 	def write_stock_symbols_for_industry(self, industry):
 
 		industry_code = self.US_STOCK_INDUSTRY_CODES[industry]['code']
@@ -74,3 +75,10 @@ class StockSymbols(object):
 		    logging.info(f'Symbols written {symbols_written} to {industry_file}')
 		
 		return industry_file, symbols_written
+
+
+	def get_stock_symbols_for_industry(self, industry):
+		if industry in self.US_STOCK_INDUSTRY_CODES:
+			with open(f"plugins/output/stock_symbols_{industry}.json") as f:
+				symbols = json.load(f)
+			return symbols
