@@ -79,6 +79,7 @@ class StockSymbols(object):
 
 	def get_stock_symbols_for_industry(self, industry):
 		if industry in self.US_STOCK_INDUSTRY_CODES:
-			with open(f"plugins/output/stock_symbols_{industry}.json") as f:
+			file = self.US_STOCK_INDUSTRY_CODES[industry]['filename']
+			with open(file) as f:
 				symbols = json.load(f)
 			return symbols

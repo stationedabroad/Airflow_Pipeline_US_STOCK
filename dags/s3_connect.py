@@ -44,7 +44,11 @@ with DAG('S3_connect_DAG', schedule_interval=None, default_args=default_args) as
         frequency='daily',
         h_start_date='2018-11-9',
         h_end_date='2019-11-10',
-        path_to_write='plugins/output/tmp'
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data',
+        s3_key='Automotive-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
         )
 
     # create_bucket_task = PythonOperator(

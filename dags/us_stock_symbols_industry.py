@@ -6,6 +6,8 @@ import json
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
+
+from airflow.operators import TiingoPricePerIndustryHistorical
 from airflow.operators import StageJsonToS3
 from airflow.operators import S3CreateBucket
 from airflow.hooks.S3_hook import S3Hook
@@ -14,7 +16,7 @@ from helpers import StockSymbols
 
 default_args = {
     'owner': 'Sulman M',
-    'start_date': datetime(2019, 11, 9),
+    'start_date': datetime(2019, 11, 10),
     'depends_on_past': False,
     'retries': 1,
     'email_on_retry': False,
@@ -174,7 +176,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     automotive_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_Automotive_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='Automotive-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Automotive']['filename'],
@@ -184,7 +186,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     agriculture_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_Agriculture_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='Agriculture-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Agriculture']['filename'],
@@ -194,7 +196,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     materials_resources_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_MaterialsResources_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='BasicMaterialsResources-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Basic Materials/Resources']['filename'],
@@ -204,7 +206,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     business_consumer_srv_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_Business_ConsumerServices_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='Business_ConsumerServices-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Business/Consumer Services']['filename'],
@@ -214,7 +216,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     consumer_goods_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_ConsumerGoods_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='ConsumerGoods-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Consumer Goods']['filename'],
@@ -224,7 +226,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     energy_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_Energy_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='Energy-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Energy']['filename'],
@@ -234,7 +236,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     financial_services_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_FinancialServices_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='FinancialServices-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Financial Services']['filename'],
@@ -244,7 +246,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     healthcare_lifesciences_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_HealthCare_LifeSciences_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='HealthCare-LifeSciences-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Health Care/Life Sciences']['filename'],
@@ -254,7 +256,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     industrial_goods_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_IndustrialGoods_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='IndustrialGoods-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Industrial Goods']['filename'],
@@ -264,7 +266,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     leisure_arts_hospitality_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_Leisure_Arts_Hospitality_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='Leisure-Arts-Hospitality-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Leisure/Arts/Hospitality']['filename'],
@@ -274,7 +276,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     media_entertainment_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_MediaEntertainment_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='MediaEntertainment-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Media/Entertainment']['filename'],
@@ -284,7 +286,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     real_estate_construction_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_RealEstate_Construction_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='RealEstate-Construction-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Real Estate/Construction']['filename'],
@@ -294,7 +296,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     retail_wholesale_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_RetailWholesale_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='RetailWholesale-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Retail/Wholesale']['filename'],
@@ -304,7 +306,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     technology_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_Technology_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='Technology-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Technology']['filename'],
@@ -314,7 +316,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     telecommunication_srv_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_TelecommunicationServices_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='TelecommunicationServices-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Telecommunication Services']['filename'],
@@ -324,7 +326,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     transportation_logistics_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_TransportationLogistics_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='TransportationLogistics-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Transportation/Logistics']['filename'],
@@ -334,7 +336,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     utilities_stock_symbols_to_s3 = StageJsonToS3(
     	task_id='Stage_Utilities_StockSymbols_toS3',
     	aws_conn_id='aws_credential',
-    	s3_bucket='us-stock-data',
+    	s3_bucket='us-stock-data-sm',
     	s3_key='Utilities-{}.json',
     	execution_date='{{ ds }}',
     	path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Utilities']['filename'],
@@ -343,7 +345,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     create_execution_date_s3_bucket = S3CreateBucket(
     	task_id='Create_S3Bucket',
     	aws_conn_id='aws_credential',
-    	bucket_name='us-stock-data',
+    	bucket_name='us-stock-data-sm',
     	execution_date='{{ ds }}'
     	)
 
@@ -356,6 +358,253 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     	task_id="End_StockSymbolsLoad"
     	)
 
+    start_eod_prices_operator = DummyOperator(
+    	task_id="Begin_StockPricesLoad"
+    	)    
+
+    automotive_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalAutomotive_Prices_toS3',
+        industry='Automotive',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Automotive'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Automotive-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    agriculture_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalAgriculture_Prices_toS3',
+        industry='Agriculture',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Agriculture'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Agriculture-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    materials_resources_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalMaterials_Resources_Prices_toS3',
+        industry='BasicMaterials_Resources',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Basic Materials/Resources'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Materials-Resources-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )    
+
+    business_consumer_srv_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalBusiness_ConsumerServices_Prices_toS3',
+        industry='Business_ConsumerServices',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Business/Consumer Services'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Business-ConsumerServices-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )   
+
+    consumer_goods_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalConsumerGoods_Prices_toS3',
+        industry='ConsumerGoods',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Consumer Goods'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='ConsumerGoods-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    energy_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalEnergy_Prices_toS3',
+        industry='Energy',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Energy'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Energy-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    financial_srv_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalFinancialServices_Prices_toS3',
+        industry='FinancialServices',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Financial Services'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='FinancialServices-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    healthcare_lifesciences_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalHealthCare_LifeSciences_Prices_toS3',
+        industry='HealthCare_LifeSciences',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Health Care/Life Sciences'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='HealthCare-LifeSciences-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    industrial_goods_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalIndustrialGoods_Prices_toS3',
+        industry='IndustrialGoods',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Industrial Goods'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='IndustrialGoods-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    leisure_arts_hospitality_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalLeisure_Arts_Hospitality_Prices_toS3',
+        industry='Leisure_Arts_Hospitality',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Leisure/Arts/Hospitality'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Leisure-Arts-Hospitality-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    media_entertainment_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalMedia_Entertainment_Prices_toS3',
+        industry='Media_Entertainment',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Media/Entertainment'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Media-Entertainment-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    real_estate_construction_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalRealEstate_Construction_Prices_toS3',
+        industry='RealEstate_Construction',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Real Estate/Construction'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='RealEstate-Construction-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    retail_wholesale_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalRetail_Wholesale_Prices_toS3',
+        industry='Retail_Wholesale',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Retail/Wholesale'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Retail-Wholesale-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    technology_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalTechnology_Prices_toS3',
+        industry='Technology',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Technology'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Technology-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    telecommunication_srv_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalTelecommunicationServices_Prices_toS3',
+        industry='TelecommunicationServices',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Telecommunication Services'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='TelecommunicationServices-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    transportation_logistics_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalTransportation_Logistics_Prices_toS3',
+        industry='Transportation_Logistics',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Transportation/Logistics'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Transportation-Logistics-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    utilities_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalUtilities_Prices_toS3',
+        industry='Utilities',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Utilities'),
+        frequency='daily',
+        h_start_date='2018-11-9',
+        h_end_date='2019-11-10',
+        path_to_write='plugins/output/tmp',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Utilities-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ ds }}'
+        )
+
+    completion_eod_prices_operator = DummyOperator(
+    	task_id="End_StockPricesLoad"
+    	)             
+
+    # Staging of Stock Symbols Web Scrape to AWS S3
     start_operator >> automotive_stock_symbols_to_tmp >> check_inbound_files >>  create_execution_date_s3_bucket >> automotive_stock_symbols_to_s3 >> completion_operator
     start_operator >> agriculture_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> agriculture_stock_symbols_to_s3 >> completion_operator
     start_operator >> materials_resources_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> materials_resources_stock_symbols_to_s3 >> completion_operator
@@ -373,3 +622,22 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     start_operator >> telocommunication_srv_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> telecommunication_srv_stock_symbols_to_s3 >> completion_operator
     start_operator >> transportation_logistics_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> transportation_logistics_stock_symbols_to_s3 >> completion_operator
     start_operator >> utilities_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> utilities_stock_symbols_to_s3 >> completion_operator
+
+    # Staging of EOD Stock prices to AWS S3
+    completion_operator >> start_eod_prices_operator >> automotive_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> agriculture_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> materials_resources_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> business_consumer_srv_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> consumer_goods_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> energy_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> financial_srv_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> healthcare_lifesciences_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> industrial_goods_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> leisure_arts_hospitality_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> media_entertainment_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> real_estate_construction_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> retail_wholesale_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> technology_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> telecommunication_srv_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> transportation_logistics_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_eod_prices_operator >> utilities_stock_eod_price_to_s3 >> completion_eod_prices_operator
