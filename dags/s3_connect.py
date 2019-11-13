@@ -49,8 +49,8 @@ def read_s3_with_spark(*args, **kwargs):
     # logging.info(f'Spark called S3 --- {df_agr.count()}')
 
 def test_cassandra(*args, **kwargs):
-    access_key = 'AKIAXCBZH7EEV3TH25N2'
-    secret_key = '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'
+    access_key = ''
+    secret_key = ''
     spark = SparkSession.builder.appName('cassy').getOrCreate()
     sc=spark.sparkContext
     hadoop_conf = sc._jsc.hadoopConfiguration()
