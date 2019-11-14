@@ -2,6 +2,7 @@ import urllib.request as req
 import configparser
 import re
 import json
+import logging
 
 def stock_symbols(industry=None):
 

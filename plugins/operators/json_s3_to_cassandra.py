@@ -6,6 +6,8 @@ import logging
  
 from cassandra.cluster import Cluster
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import dayofweek, dayofmonth, dayofyear, date_format, weekofyear, hour, minute
+
 
 
 
@@ -46,6 +48,7 @@ class TargetDBWrite(BaseOperator):
 
 
 class TargetS3StockSymbols(TargetDBWrite):
+	template_fields = ('execution_date',)
 
 	SQL_INSERT = """
 		insert into us_stock.stock_symbols (ticker, description, industry) 
@@ -76,7 +79,6 @@ class TargetS3StockSymbols(TargetDBWrite):
 		#Get S3 data
 		logging.info(f'Reading from S3 bucket {self.s3_bucket} key {self.s3_key}')
 		s3_df = self.spark.read.json(self.s3_write_path + self.s3_key)
-		logging.info(f'S3 read URL: {s3_df}')
 		if s3_df:
 			df_pd = s3_df.toPandas()
 			logging.info(f'Shape of dataframe for stock symbols {self.industry} - {df_pd.shape}')
@@ -84,4 +86,77 @@ class TargetS3StockSymbols(TargetDBWrite):
 			for desc, ticker in df_pd.values:
 				self.session.execute(TargetS3StockSymbols.SQL_INSERT, (ticker, desc, self.industry))
 				written_records += 1
-			logging.info(f'Written {written_records} to cassandra cluster {self.session.hosts}')	
+			logging.info(f'Written {written_records} to cassandra cluster {self.session.hosts}')
+
+
+
+class TargetS3EodLoad(TargetDBWrite):
+	template_fields = ('execution_date',)
+
+	SQL_INSERT_EOD = """
+		insert into us_stock.eod_stock_price (date, ticker, adj_close, adj_high, adj_low, adj_open, adj_volume, close, company_name, 
+		                                      dayofmonth, dayofweek, dayofyear, div_cash, high, hour, low, minute, open, split_factor,
+		                                      ts, volume, weekofyear) 
+		values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+	"""
+
+	@apply_defaults
+	def __init__(self,
+				 aws_conn_id, 
+				 s3_bucket, 
+				 s3_key,
+				 execution_date, 
+				 cass_cluster,
+				 industry,
+				 stock_symbol_s3key,
+				 load_from,
+				 load_to,
+				 *args, **kwargs):
+
+		super(TargetS3EodLoad, self).__init__(aws_conn_id=aws_conn_id,
+			                                       s3_bucket=s3_bucket,
+			                                       s3_key=s3_key,
+			                                       cass_cluster=cass_cluster,
+			                                       execution_date=execution_date,
+			                                       *args, **kwargs)
+
+		self.industry = industry
+		# self.s3_read_path_eod = f'{TargetDBWrite.S3_PREFIX}{self.s3_bucket}-{self.execution_date}/{self.s3_key}'
+		self.stock_symbol_s3key = stock_symbol_s3key
+		self.load_from = load_from
+		self.load_to = load_to
+		# self.s3_read_path_stock_symbols = f'{TargetDBWrite.S3_PREFIX}{self.s3_bucket}-{self.execution_date}/{self.stock_symbol_s3key}'
+
+	def execute(self, context):
+		# EOD prices S3 key
+		self.s3_key = self.s3_key.format(start=self.load_from, end=self.load_to, ds=self.execution_date)
+		self.s3_read_path_eod = f'{TargetDBWrite.S3_PREFIX}{self.s3_bucket}-{self.execution_date}/{self.s3_key}'
+		# Stock Symbols S3 key
+		self.stock_symbol_s3key = self.stock_symbol_s3key.format(format(self.execution_date))
+		self.s3_read_path_stock_symbols = f'{TargetDBWrite.S3_PREFIX}{self.s3_bucket}-{self.execution_date}/{self.stock_symbol_s3key}'
+		
+		#Get S3 data
+		logging.info(f'Reading EOD prices from S3 bucket/key {self.s3_read_path_eod}')
+		df_s3_eod = self.spark.read.json(self.s3_read_path_eod)
+		logging.info(f'Reading Stock Symbols from bucket/key {self.s3_read_path_stock_symbols}')
+		df_s3_ss = self.spark.read.json(self.s3_read_path_stock_symbols)
+		if df_s3_eod and df_s3_ss:
+			df_tmp_join = df_s3_eod.join(df_s3_ss, df_s3_eod.ticker == df_s3_ss.symbol_code, 'inner') \
+								   .alias('tmp_table') \
+								   .select('tmp_table.*') \
+								   .withColumn('i_date', date_format('date', 'dd/MM/yyyy')) \
+   								   .withColumn('hour', hour('date')) \
+   								   .withColumn('minute', minute('date')) \
+                                   .withColumn('dayOfMonth', dayofmonth('date')) \
+                                   .withColumn('dayOfWeek', dayofweek('date')) \
+                                   .withColumn('dayOfYear', dayofyear('date')) \
+                                   .withColumn('weekOfYear', weekofyear('date')) \
+                                   .toPandas()
+			logging.info(f'Shape of dataframe for EOD transformed prices, industry: {self.industry} - {df_tmp_join.shape}')
+			# logging.info(f'COLUMNS - {df_tmp_join.columns}')
+			written_records = 0
+			for row in df_tmp_join.values:
+				self.session.execute(TargetS3EodLoad.SQL_INSERT_EOD, (row[16], row[12], row[0], row[1], row[2], row[3], row[4], row[5], row[14], row[19], row[20], \
+					                                                         row[21], row[7], row[8], row[17], row[9], row[18], row[10], row[11], row[6], row[13], row[22]))
+				written_records += 1
+			logging.info(f'Written {written_records} to cassandra cluster {self.session.hosts} table')			

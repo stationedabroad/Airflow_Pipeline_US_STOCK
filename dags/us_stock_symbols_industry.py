@@ -4,12 +4,14 @@ import os
 import json
 
 from airflow import DAG
+from airflow.models  import Variable
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 
 from airflow.operators import TiingoPricePerIndustryHistorical
 from airflow.operators import StageJsonToS3
 from airflow.operators import S3CreateBucket
+from airflow.operators import TargetS3StockSymbols, TargetS3EodLoad
 from airflow.hooks.S3_hook import S3Hook
 
 from helpers import StockSymbols
@@ -25,6 +27,9 @@ default_args = {
 }
 
 stock_symbols = StockSymbols()
+# Load variables
+load_from_date = Variable.get("start_load_date")
+load_to_date = Variable.get("end_load_date")
 
 def write_stock_symbols_to_tmp(industry=None):
 	if not industry:
@@ -598,46 +603,95 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
         s3_bucket='us-stock-data-sm',
         s3_key='Utilities-eod-{start}-to-{end}-{ds}.json',
         execution_date='{{ ds }}'
-        )
+        )   
 
     completion_eod_prices_operator = DummyOperator(
     	task_id="End_StockPricesLoad"
-    	)             
+    	)
+
+    start_analytic_target_loads = DummyOperator(
+        task_id="Start_Analytic_Target_Loads"
+        )
+
+    automotive_stock_symbols_s3_to_cassandra = TargetS3StockSymbols(
+        task_id='Load_Automotive_stock_symbol_to_cassandra',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm-2019-11-10',
+        s3_key=stock_symbols.US_STOCK_INDUSTRY_CODES['Automotive']['s3_key_stock_symbols'],
+        execution_date='{{ ds }}',
+        cass_cluster=['127.0.0.1'],
+        industry='Automotive'
+        )    
+
+# End Of Day Loads
+    automotive_eod_s3_to_cassandra = TargetS3EodLoad(
+        task_id='Load_Automotive_EOD_Prices',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key='Automotive-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ macros.ds_add(ds, -4) }}',
+        cass_cluster=['127.0.0.1'],
+        industry='Automotive',
+        stock_symbol_s3key=stock_symbols.US_STOCK_INDUSTRY_CODES['Automotive']['s3_key_stock_symbols'],
+        load_from=load_from_date,
+        load_to=load_to_date
+        )
+
+    completion_analytic_target_loads = DummyOperator(
+        task_id="End_Analytic_Target_Loads"
+        )    
+
 
     # Staging of Stock Symbols Web Scrape to AWS S3
-    start_operator >> automotive_stock_symbols_to_tmp >> check_inbound_files >>  create_execution_date_s3_bucket >> automotive_stock_symbols_to_s3 >> completion_operator
-    start_operator >> agriculture_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> agriculture_stock_symbols_to_s3 >> completion_operator
-    start_operator >> materials_resources_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> materials_resources_stock_symbols_to_s3 >> completion_operator
-    start_operator >> business_consumer_srv_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> business_consumer_srv_stock_symbols_to_s3 >> completion_operator
-    start_operator >> consumer_goods_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> consumer_goods_stock_symbols_to_s3 >> completion_operator
-    start_operator >> energy_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> energy_stock_symbols_to_s3 >> completion_operator
-    start_operator >> financial_srv_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> financial_services_stock_symbols_to_s3 >> completion_operator
-    start_operator >> healthcare_lifesciences_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> healthcare_lifesciences_stock_symbols_to_s3 >> completion_operator
-    start_operator >> industrial_goods_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> industrial_goods_stock_symbols_to_s3 >> completion_operator
-    start_operator >> leisure_arts_hospitality_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> leisure_arts_hospitality_stock_symbols_to_s3 >> completion_operator
-    start_operator >> media_entertainment_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> media_entertainment_stock_symbols_to_s3 >> completion_operator
-    start_operator >> real_estate_construction_stock_symbols_to_tmp >> check_inbound_files >>create_execution_date_s3_bucket >> real_estate_construction_stock_symbols_to_s3 >> completion_operator
-    start_operator >> retail_wholesale_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> retail_wholesale_stock_symbols_to_s3 >> completion_operator
-    start_operator >> technology_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> technology_stock_symbols_to_s3 >> completion_operator
-    start_operator >> telocommunication_srv_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> telecommunication_srv_stock_symbols_to_s3 >> completion_operator
-    start_operator >> transportation_logistics_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> transportation_logistics_stock_symbols_to_s3 >> completion_operator
-    start_operator >> utilities_stock_symbols_to_tmp >> check_inbound_files >> create_execution_date_s3_bucket >> utilities_stock_symbols_to_s3 >> completion_operator
-
-    # Staging of EOD Stock prices to AWS S3
-    completion_operator >> start_eod_prices_operator >> automotive_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> agriculture_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> materials_resources_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> business_consumer_srv_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> consumer_goods_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> energy_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> financial_srv_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> healthcare_lifesciences_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> industrial_goods_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> leisure_arts_hospitality_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> media_entertainment_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> real_estate_construction_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> retail_wholesale_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> technology_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> telecommunication_srv_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> transportation_logistics_stock_eod_price_to_s3 >> completion_eod_prices_operator
-    start_eod_prices_operator >> utilities_stock_eod_price_to_s3 >> completion_eod_prices_operator
+    start_operator >> [automotive_stock_symbols_to_tmp,
+                       agriculture_stock_symbols_to_tmp,
+                       materials_resources_stock_symbols_to_tmp,
+                       business_consumer_srv_stock_symbols_to_tmp,
+                       consumer_goods_stock_symbols_to_tmp,
+                       energy_stock_symbols_to_tmp,
+                       financial_srv_stock_symbols_to_tmp,
+                       healthcare_lifesciences_stock_symbols_to_tmp,
+                       industrial_goods_stock_symbols_to_tmp,
+                       leisure_arts_hospitality_stock_symbols_to_tmp,
+                       media_entertainment_stock_symbols_to_tmp,
+                       real_estate_construction_stock_symbols_to_tmp,
+                       retail_wholesale_stock_symbols_to_tmp,
+                       technology_stock_symbols_to_tmp,
+                       telocommunication_srv_stock_symbols_to_tmp,
+                       transportation_logistics_stock_symbols_to_tmp,
+                       utilities_stock_symbols_to_tmp] >> check_inbound_files >> create_execution_date_s3_bucket >> \
+                       [automotive_stock_symbols_to_s3,
+                        agriculture_stock_symbols_to_s3,
+                        materials_resources_stock_symbols_to_s3,
+                        business_consumer_srv_stock_symbols_to_s3,
+                        consumer_goods_stock_symbols_to_s3,
+                        energy_stock_symbols_to_s3,
+                        financial_services_stock_symbols_to_s3,
+                        healthcare_lifesciences_stock_symbols_to_s3,
+                        industrial_goods_stock_symbols_to_s3,
+                        leisure_arts_hospitality_stock_symbols_to_s3,
+                        media_entertainment_stock_symbols_to_s3,
+                        real_estate_construction_stock_symbols_to_s3,
+                        retail_wholesale_stock_symbols_to_s3,
+                        technology_stock_symbols_to_s3,
+                        telecommunication_srv_stock_symbols_to_s3,
+                        transportation_logistics_stock_symbols_to_s3,
+                        utilities_stock_symbols_to_s3] >> completion_operator >> start_eod_prices_operator >> \
+                        [automotive_eod_price_to_s3,
+                        agriculture_eod_price_to_s3,
+                        materials_resources_stock_eod_price_to_s3,
+                        business_consumer_srv_stock_eod_price_to_s3,
+                        consumer_goods_stock_eod_price_to_s3,
+                        energy_stock_eod_price_to_s3,
+                        financial_srv_stock_eod_price_to_s3,
+                        healthcare_lifesciences_stock_eod_price_to_s3,
+                        industrial_goods_stock_eod_price_to_s3,
+                        leisure_arts_hospitality_stock_eod_price_to_s3,
+                        media_entertainment_stock_eod_price_to_s3,
+                        real_estate_construction_stock_eod_price_to_s3,
+                        retail_wholesale_stock_eod_price_to_s3,
+                        technology_stock_eod_price_to_s3,
+                        telecommunication_srv_stock_eod_price_to_s3,
+                        transportation_logistics_stock_eod_price_to_s3,
+                        utilities_stock_eod_price_to_s3] >> completion_eod_prices_operator >>  start_analytic_target_loads >> \
+                        automotive_stock_symbols_s3_to_cassandra >> automotive_eod_s3_to_cassandra >> completion_analytic_target_loads

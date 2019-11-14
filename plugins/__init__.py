@@ -13,6 +13,7 @@ class CustomPlugin(AirflowPlugin):
         operators.S3CreateBucket,
         operators.TiingoPricePerIndustryHistorical,
         operators.TargetS3StockSymbols,
+        operators.TargetS3EodLoad,
     ]
     helpers = [
         helpers.StockSymbols,

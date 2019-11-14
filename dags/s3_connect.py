@@ -3,11 +3,12 @@ import logging
 import os
 
 from airflow import DAG
+from airflow.models  import Variable
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators import StageJsonToS3
 from airflow.operators import TiingoPricePerIndustryHistorical
-from airflow.operators import TargetS3StockSymbols
+from airflow.operators import TargetS3StockSymbols, TargetS3EodLoad
 from airflow.hooks.S3_hook import S3Hook
 
 from helpers import StockSymbols
@@ -22,10 +23,12 @@ default_args = {
     'retries': 0,
     'email_on_retry': False,
     'retry_delay': timedelta(minutes=5),
-    'catchup_by_default': False,
+    # 'catchup_by_default': True,
 }
 
 stock_symbols = StockSymbols()
+load_from_date = Variable.get("start_load_date")
+load_to_date = Variable.get("end_load_date")
 
 def create_bucket(*args, **kwargs):
     logging.info(f'Creating NEW S3 bucket')
@@ -36,9 +39,11 @@ def create_bucket(*args, **kwargs):
     s3_hook.create_bucket(bucket_name=bname)
 
 def read_s3_with_spark(*args, **kwargs):
+<<<<<<< HEAD
     print('Called ...')
     # access_key = ''
     # secret_key = ''
+=======
     # spark = SparkSession.builder.appName('cassy').getOrCreate()
     # sc=spark.sparkContext
     # hadoop_conf = sc._jsc.hadoopConfiguration()
@@ -68,7 +73,7 @@ def test_cassandra(*args, **kwargs):
         session.execute(query, (row[1], row[0]))
     
 
-with DAG('S3_connect_DAG', schedule_interval=None, default_args=default_args) as dag:
+with DAG('S3_connect_DAG', schedule_interval='@once', catchup=True, default_args=default_args) as dag:
     # Task 1 - Begin
     start_operator = DummyOperator(
         task_id="Begin_createBucketS3"
@@ -100,14 +105,29 @@ with DAG('S3_connect_DAG', schedule_interval=None, default_args=default_args) as
     #     provide_context=True
     #     )
 
-    s3_spark_to_cassandra = TargetS3StockSymbols(
-        task_id='stock_symbol_financial_services_to_cassandra',
+    # s3_spark_to_cassandra = TargetS3StockSymbols(
+    #     task_id='stock_symbol_financial_services_to_cassandra',
+    #     aws_conn_id='aws_credential',
+    #     s3_bucket='us-stock-data-sm-2019-11-10',
+    #     s3_key='FinancialServices-{}.json'.format('2019-11-10'),
+    #     execution_date='{{ ds }}',
+    #     cass_cluster=['127.0.0.1'],
+    #     industry='Financial Services'
+    #     )
+
+    s3_eod = TargetS3EodLoad(
+        task_id='stock_symbol_retails_eod',
         aws_conn_id='aws_credential',
-        s3_bucket='us-stock-data-sm-2019-11-10',
-        s3_key='FinancialServices-{}.json'.format('2019-11-10'),
-        execution_date='{{ ds }}',
+        s3_bucket='us-stock-data-sm',
+        s3_key='RealEstate-Construction-eod-{start}-to-{end}-{ds}.json',
+        execution_date='{{ macros.ds_add(ds, -4) }}',
         cass_cluster=['127.0.0.1'],
-        industry='Financial Services'
+        industry='Real Estate/Construction',
+        stock_symbol_s3key=stock_symbols.US_STOCK_INDUSTRY_CODES['Real Estate/Construction']['s3_key_stock_symbols'],
+        load_from=load_from_date,
+        load_to=load_to_date
         )
 
+<<<<<<< HEAD
     start_operator >> s3_spark_to_cassandra
+=======
