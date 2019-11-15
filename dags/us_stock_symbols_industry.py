@@ -75,7 +75,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
         path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Automotive']['filename'],
         )
 
-    automotive_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+    automotive_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
         task_id='Fetch_HistoricalAutomotive_Prices_toS3',
         industry='Automotive',
         stock_symbols=stock_symbols.get_stock_symbols_for_industry('Automotive'),
@@ -128,7 +128,7 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
         path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Agriculture']['filename'],
         )
 
-    agriculture_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+    agriculture_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
         task_id='Fetch_HistoricalAgriculture_Prices_toS3',
         industry='Agriculture',
         stock_symbols=stock_symbols.get_stock_symbols_for_industry('Agriculture'),
@@ -1031,8 +1031,8 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
                         telecommunication_srv_stock_symbols_to_s3,
                         transportation_logistics_stock_symbols_to_s3,
                         utilities_stock_symbols_to_s3] >> completion_operator >> start_eod_prices_operator >> \
-                        [automotive_eod_price_to_s3,
-                        agriculture_eod_price_to_s3,
+                        [automotive_stock_eod_price_to_s3,
+                        agriculture_stock_eod_price_to_s3,
                         materials_resources_stock_eod_price_to_s3,
                         business_consumer_srv_stock_eod_price_to_s3,
                         consumer_goods_stock_eod_price_to_s3,
@@ -1064,4 +1064,4 @@ with DAG('US_Stock_Symbols_DAG', schedule_interval='@once', default_args=default
     completion_eod_prices_operator >> start_analytic_target_loads >> technology_stock_symbols_s3_to_cassandra >> technology_eod_s3_to_cassandra >> completion_analytic_target_loads
     completion_eod_prices_operator >> start_analytic_target_loads >> telecommunication_srv_stock_symbols_s3_to_cassandra >> telecommunication_srv_eod_s3_to_cassandra >> completion_analytic_target_loads
     completion_eod_prices_operator >> start_analytic_target_loads >> transportation_logistics_stock_symbols_s3_to_cassandra >> transportation_logistics_eod_s3_to_cassandra >> completion_analytic_target_loads
-    completion_eod_prices_operator >> start_analytic_target_loads >> utilities_logistics_stock_symbols_s3_to_cassandra >> utilities_logistics_eod_s3_to_cassandra >> completion_analytic_target_loads
+    completion_eod_prices_operator >> start_analytic_target_loads >> utilities_stock_symbols_s3_to_cassandra >> utilities_eod_s3_to_cassandra >> completion_analytic_target_loads

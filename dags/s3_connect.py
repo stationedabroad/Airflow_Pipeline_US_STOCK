@@ -100,59 +100,60 @@ with DAG('S3_connect_DAG', schedule_interval='@once', catchup=True, default_args
         task_id="Begin_createBucketS3"
         )
 
-    # Utilities Industry
-    utilities_stock_symbols_to_tmp = PythonOperator(
-        task_id="Fetch_Utilities_StockSymbols_toTmp",
-        python_callable=write_stock_symbols_to_tmp,
-        op_kwargs={'industry': 'Utilities'}
-        )
+# # Agriculture Industry
+#     agriculture_stock_symbols_to_tmp = PythonOperator(
+#         task_id="Fetch_Agriculture_StockSymbols_toTmp",
+#         python_callable=write_stock_symbols_to_tmp,
+#         op_kwargs={'industry': 'Agriculture'}
+#         )
 
-    utilities_stock_symbols_to_s3 = StageJsonToS3(
-        task_id='Stage_Utilities_StockSymbols_toS3',
+#     agriculture_stock_symbols_to_s3 = StageJsonToS3(
+#         task_id='Stage_Agriculture_StockSymbols_toS3',
+#         aws_conn_id='aws_credential',
+#         s3_bucket='us-stock-data-sm',
+#         s3_key='Agriculture-{}.json',
+#         execution_date='{{ ds }}',
+#         path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Agriculture']['filename'],
+#         )
+
+#     agriculture_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+#         task_id='Fetch_HistoricalAgriculture_Prices_toS3',
+#         industry='Agriculture',
+#         stock_symbols=stock_symbols.get_stock_symbols_for_industry('Agriculture'),
+#         frequency='daily',
+#         h_start_date=load_from_date,
+#         h_end_date=load_to_date,
+#         path_to_write='plugins/output/tmp',
+#         aws_conn_id='aws_credential',
+#         s3_bucket='us-stock-data-sm',
+#         s3_key='Agriculture-eod-{start}-to-{end}-{ds}.json',
+#         execution_date='{{ ds }}'
+#         )
+
+#     agriculture_stock_symbols_s3_to_cassandra = TargetS3StockSymbols(
+#         task_id='Load_Agriculture_stock_symbol_to_cassandra',
+#         aws_conn_id='aws_credential',
+#         s3_bucket='us-stock-data-sm',
+#         s3_key=stock_symbols.US_STOCK_INDUSTRY_CODES['Agriculture']['s3_key_stock_symbols'],
+#         execution_date='{{ ds }}',
+#         cass_cluster=['127.0.0.1'],
+#         industry='Agriculture'
+#         )      
+
+    agriculture_eod_s3_to_cassandra = TargetS3EodLoad(
+        task_id='Load_Agriculture_EOD_Prices_to_cassandra',
         aws_conn_id='aws_credential',
         s3_bucket='us-stock-data-sm',
-        s3_key='Utilities-{}.json',
-        execution_date='{{ ds }}',
-        path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Utilities']['filename'],
-        )
-
-    utilities_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
-        task_id='Fetch_HistoricalUtilities_Prices_toS3',
-        industry='Utilities',
-        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Utilities'),
-        frequency='daily',
-        h_start_date=load_from_date,
-        h_end_date=load_to_date,
-        path_to_write='plugins/output/tmp',
-        aws_conn_id='aws_credential',
-        s3_bucket='us-stock-data-sm',
-        s3_key='Utilities-eod-{start}-to-{end}-{ds}.json',
-        execution_date='{{ ds }}'
-        )
-
-    utilities_stock_symbols_s3_to_cassandra = TargetS3StockSymbols(
-        task_id='Load_Utilities_stock_symbol_to_cassandra',
-        aws_conn_id='aws_credential',
-        s3_bucket='us-stock-data-sm',
-        s3_key=stock_symbols.US_STOCK_INDUSTRY_CODES['Utilities']['s3_key_stock_symbols'],
+        s3_key=stock_symbols.US_STOCK_INDUSTRY_CODES['Agriculture']['s3_key_eod'],
         execution_date='{{ ds }}',
         cass_cluster=['127.0.0.1'],
-        industry='Utilities'
-        )      
-
-    utilities_eod_s3_to_cassandra = TargetS3EodLoad(
-        task_id='Load_Utilities_EOD_Prices_to_cassandra',
-        aws_conn_id='aws_credential',
-        s3_bucket='us-stock-data-sm',
-        s3_key=stock_symbols.US_STOCK_INDUSTRY_CODES['Utilities']['s3_key_eod'],
-        execution_date='{{ ds }}',
-        cass_cluster=['127.0.0.1'],
-        industry='Utilities',
-        stock_symbol_s3key=stock_symbols.US_STOCK_INDUSTRY_CODES['Utilities']['s3_key_stock_symbols'],
+        industry='Agriculture',
+        stock_symbol_s3key=stock_symbols.US_STOCK_INDUSTRY_CODES['Agriculture']['s3_key_stock_symbols'],
         load_from=load_from_date,
         load_to=load_to_date
-        )       
+        )   
 
-    start_operator >> utilities_stock_symbols_to_tmp >> \
-    utilities_stock_symbols_to_s3 >> utilities_stock_eod_price_to_s3 >> \
-    utilities_stock_symbols_s3_to_cassandra  >> utilities_eod_s3_to_cassandra
+    start_operator >>  agriculture_eod_s3_to_cassandra
+    # agriculture_stock_symbols_to_tmp >> \
+    # agriculture_stock_symbols_to_s3 >> agriculture_stock_eod_price_to_s3 >> \
+    # agriculture_stock_symbols_s3_to_cassandra  >> agriculture_eod_s3_to_cassandra

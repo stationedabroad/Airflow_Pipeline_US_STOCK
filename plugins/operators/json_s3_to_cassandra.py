@@ -97,9 +97,9 @@ class TargetS3EodLoad(TargetDBWrite):
 
 	SQL_INSERT_EOD = """
 		insert into us_stock.eod_stock_price (date, ticker, adj_close, adj_high, adj_low, adj_open, adj_volume, close, company_name, 
-		                                      dayofmonth, dayofweek, dayofyear, div_cash, high, hour, low, minute, open, split_factor,
+		                                      dayofmonth, dayofweek, dayofyear, div_cash, high, hour, industry, low, minute, open, split_factor,
 		                                      ts, volume, weekofyear) 
-		values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+		values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 	"""
 
 	@apply_defaults
@@ -157,13 +157,14 @@ class TargetS3EodLoad(TargetDBWrite):
 			# logging.info(f'COLUMNS - {df_tmp_join.columns}')
 			written_records = 0
 			for row in df_tmp_join.rdd.collect():
+				print(f'THIS IS THE ROW - {row}')
 				self.session.execute(TargetS3EodLoad.SQL_INSERT_EOD, (row['i_date'], 
 					                                                  row['ticker'], \
 					                                                  row['adjClose'], \
 					                                                  row['adjHigh'], \
 					                                                  row['adjLow'], \
 					                                                  row['adjOpen'], \
-					                                                  row['adjVolume'], \
+					                                                  int(row['adjVolume'])	, \
 					                                                  row['close'], \
 					                                                  row['company_name'], \
 					                                                  row['dayOfMonth'], \
@@ -172,12 +173,13 @@ class TargetS3EodLoad(TargetDBWrite):
 					                                                  row['divCash'], \
 																	  row['high'], \
 																	  row['hour'], \
+																	  row['industry'], \
 																	  row['low'], \
 																	  row['minute'], \
 																	  row['open'], \
 																	  row['splitFactor'], \
 																	  row['date'], \
-																	  row['volume'], \
+																	  int(row['volume']), \
 																	  row['weekOfYear']))
 			# for row in df_tmp_join.values:
 				# print(f'{row[16]}--- {row[12]}--- {row[0]}--- {row[1]}--- {row[2]}--- {row[3]}--- {row[4]}--- {row[5]}--- {row[14]}--- {row[19]}--- {row[20]}--- \
