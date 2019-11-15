@@ -7,6 +7,7 @@ import logging
 
 class StageJsonToS3(BaseOperator):
 	template_fields = ('execution_date',)
+	ui_color = '#A6E6A6'
 
 	@apply_defaults
 	def __init__(self, 

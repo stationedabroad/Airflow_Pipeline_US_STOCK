@@ -100,80 +100,59 @@ with DAG('S3_connect_DAG', schedule_interval='@once', catchup=True, default_args
         task_id="Begin_createBucketS3"
         )
 
-    # params = PythonOperator(
-    #     task_id="get_params",
-    #     python_callable=get_params,
-    #     provide_context=True
-    #     )
-
-    # get_credentials = PythonOperator(
-    #     task_id="get_credentials",
-    #     python_callable=get_cred
-    #     )
-
-    # Automotive Industry
-    automotive_stock_symbols_to_tmp = PythonOperator(
-        task_id="Fetch_Automotive_StockSymbols_toTmp",
+    # Utilities Industry
+    utilities_stock_symbols_to_tmp = PythonOperator(
+        task_id="Fetch_Utilities_StockSymbols_toTmp",
         python_callable=write_stock_symbols_to_tmp,
-        op_kwargs={'industry': 'Automotive'}
+        op_kwargs={'industry': 'Utilities'}
         )
 
-    create_execution_date_s3_bucket = S3CreateBucket(
-        task_id='Create_S3Bucket',
-        aws_conn_id='aws_credential',
-        bucket_name='us-stock-data-sm',
-        execution_date='{{ ds }}'
-        )    
-
-    # # Automotive Industry Staging to S3
-    automotive_stock_symbols_to_s3 = StageJsonToS3(
-        task_id='Stage_Automotive_StockSymbols_toS3',
+    utilities_stock_symbols_to_s3 = StageJsonToS3(
+        task_id='Stage_Utilities_StockSymbols_toS3',
         aws_conn_id='aws_credential',
         s3_bucket='us-stock-data-sm',
-        s3_key='Automotive-{}.json',
+        s3_key='Utilities-{}.json',
         execution_date='{{ ds }}',
-        path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Automotive']['filename'],
+        path_to_data=stock_symbols.US_STOCK_INDUSTRY_CODES['Utilities']['filename'],
         )
 
-    automotive_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
-        task_id='Fetch_HistoricalAutomotive_Prices_toS3',
-        industry='Automotive',
-        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Automotive'),
+    utilities_stock_eod_price_to_s3 = TiingoPricePerIndustryHistorical(
+        task_id='Fetch_HistoricalUtilities_Prices_toS3',
+        industry='Utilities',
+        stock_symbols=stock_symbols.get_stock_symbols_for_industry('Utilities'),
         frequency='daily',
         h_start_date=load_from_date,
         h_end_date=load_to_date,
         path_to_write='plugins/output/tmp',
         aws_conn_id='aws_credential',
         s3_bucket='us-stock-data-sm',
-        s3_key='Automotive-eod-{start}-to-{end}-{ds}.json',
+        s3_key='Utilities-eod-{start}-to-{end}-{ds}.json',
         execution_date='{{ ds }}'
-        )            
-
-#########################3
-    automotive_stock_symbols_s3_to_cassandra = TargetS3StockSymbols(
-        task_id='Load_Automotive_stock_symbol_to_cassandra',
-        aws_conn_id='aws_credential',
-        s3_bucket='us-stock-data-sm',
-        s3_key=stock_symbols.US_STOCK_INDUSTRY_CODES['Automotive']['s3_key_stock_symbols'],
-        execution_date='{{ ds }}',
-        cass_cluster=['127.0.0.1'],
-        industry='Automotive'
-        )    
-
-# End Of Day Loads
-    automotive_eod_s3_to_cassandra = TargetS3EodLoad(
-        task_id='Load_Automotive_EOD_Prices',
-        aws_conn_id='aws_credential',
-        s3_bucket='us-stock-data-sm',
-        s3_key='Automotive-eod-{start}-to-{end}-{ds}.json',
-        execution_date='{{ ds }}',
-        cass_cluster=['127.0.0.1'],
-        industry='Automotive',
-        stock_symbol_s3key=stock_symbols.US_STOCK_INDUSTRY_CODES['Automotive']['s3_key_stock_symbols'],
-        load_from=load_from_date,
-        load_to=load_to_date
         )
 
-    start_operator >> automotive_stock_symbols_to_tmp >> create_execution_date_s3_bucket >> \
-    automotive_stock_symbols_to_s3 >> automotive_eod_price_to_s3 >> \
-    automotive_stock_symbols_s3_to_cassandra  >> automotive_eod_s3_to_cassandra
+    utilities_stock_symbols_s3_to_cassandra = TargetS3StockSymbols(
+        task_id='Load_Utilities_stock_symbol_to_cassandra',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key=stock_symbols.US_STOCK_INDUSTRY_CODES['Utilities']['s3_key_stock_symbols'],
+        execution_date='{{ ds }}',
+        cass_cluster=['127.0.0.1'],
+        industry='Utilities'
+        )      
+
+    utilities_eod_s3_to_cassandra = TargetS3EodLoad(
+        task_id='Load_Utilities_EOD_Prices_to_cassandra',
+        aws_conn_id='aws_credential',
+        s3_bucket='us-stock-data-sm',
+        s3_key=stock_symbols.US_STOCK_INDUSTRY_CODES['Utilities']['s3_key_eod'],
+        execution_date='{{ ds }}',
+        cass_cluster=['127.0.0.1'],
+        industry='Utilities',
+        stock_symbol_s3key=stock_symbols.US_STOCK_INDUSTRY_CODES['Utilities']['s3_key_stock_symbols'],
+        load_from=load_from_date,
+        load_to=load_to_date
+        )       
+
+    start_operator >> utilities_stock_symbols_to_tmp >> \
+    utilities_stock_symbols_to_s3 >> utilities_stock_eod_price_to_s3 >> \
+    utilities_stock_symbols_s3_to_cassandra  >> utilities_eod_s3_to_cassandra

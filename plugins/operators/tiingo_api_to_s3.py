@@ -53,6 +53,7 @@ class TiingoApi(BaseOperator):
 
 class TiingoPricePerIndustryHistorical(TiingoApi):
 	template_fields = ('execution_date',)
+	ui_color = '#DC2B2B'
 
 	ENDPOINT = r'https://api.tiingo.com/tiingo/daily/{ticker}/prices?startDate={start_date}&endDate={end_date}&token={api_key}&resampleFreq={frequency}'
 
