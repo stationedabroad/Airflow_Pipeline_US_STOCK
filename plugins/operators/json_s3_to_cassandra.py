@@ -12,7 +12,7 @@ from pyspark.sql.functions import dayofweek, dayofmonth, dayofyear, date_format,
 
 
 class TargetDBWrite(BaseOperator):
-	template_fields = ('execution_date',)
+	template_fields = ['execution_date']
 
 	S3_PREFIX = r's3://'
 
@@ -37,9 +37,9 @@ class TargetDBWrite(BaseOperator):
 		self.sc = self.spark.sparkContext
 		hadoop_conf = self.sc._jsc.hadoopConfiguration()
 		hadoop_conf.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
-		logging.info(f'CREDENTIALS : {aws_session}')
-		hadoop_conf.set("fs.s3.awsAccessKeyId", "AKIAXCBZH7EEV3TH25N2")
-		hadoop_conf.set("fs.s3.awsSecretAccessKey", "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")
+		# logging.info(f'CREDENTIALS : {aws_session}')
+		hadoop_conf.set("fs.s3.awsAccessKeyId", aws_session[0])
+		hadoop_conf.set("fs.s3.awsSecretAccessKey", aws_session[1])
 		cluster = Cluster(cass_cluster)
 		self.session = cluster.connect()	    
 
@@ -48,7 +48,7 @@ class TargetDBWrite(BaseOperator):
 
 
 class TargetS3StockSymbols(TargetDBWrite):
-	template_fields = ('execution_date',)
+	template_fields = ['execution_date']
 
 	SQL_INSERT = """
 		insert into us_stock.stock_symbols (ticker, description, industry) 
@@ -73,18 +73,20 @@ class TargetS3StockSymbols(TargetDBWrite):
 			                                       *args, **kwargs)
 
 		self.industry = industry
-		self.s3_write_path = TargetDBWrite.S3_PREFIX + self.s3_bucket + r"/"
-
+		
 	def execute(self, context):
+		key_to_write = self.s3_key.format(self.execution_date)
+		bucket_to_write = f'{self.s3_bucket}-{self.execution_date}'
+		s3_write_path = f'{TargetDBWrite.S3_PREFIX}{bucket_to_write}/{key_to_write}'
 		#Get S3 data
-		logging.info(f'Reading from S3 bucket {self.s3_bucket} key {self.s3_key}')
-		s3_df = self.spark.read.json(self.s3_write_path + self.s3_key)
+		logging.info(f'Reading from S3 bucket {bucket_to_write} key {key_to_write}')
+		s3_df = self.spark.read.json(s3_write_path)
 		if s3_df:
 			df_pd = s3_df.toPandas()
 			logging.info(f'Shape of dataframe for stock symbols {self.industry} - {df_pd.shape}')
 			written_records = 0
-			for desc, ticker in df_pd.values:
-				self.session.execute(TargetS3StockSymbols.SQL_INSERT, (ticker, desc, self.industry))
+			for desc, industry, ticker in df_pd.values:
+				self.session.execute(TargetS3StockSymbols.SQL_INSERT, (ticker, desc, industry))
 				written_records += 1
 			logging.info(f'Written {written_records} to cassandra cluster {self.session.hosts}')
 
@@ -150,13 +152,39 @@ class TargetS3EodLoad(TargetDBWrite):
                                    .withColumn('dayOfMonth', dayofmonth('date')) \
                                    .withColumn('dayOfWeek', dayofweek('date')) \
                                    .withColumn('dayOfYear', dayofyear('date')) \
-                                   .withColumn('weekOfYear', weekofyear('date')) \
-                                   .toPandas()
-			logging.info(f'Shape of dataframe for EOD transformed prices, industry: {self.industry} - {df_tmp_join.shape}')
+                                   .withColumn('weekOfYear', weekofyear('date'))
+			# logging.info(f'Shape of dataframe for EOD transformed prices, industry: {self.industry} - {df_tmp_join.shape}')
 			# logging.info(f'COLUMNS - {df_tmp_join.columns}')
 			written_records = 0
-			for row in df_tmp_join.values:
-				self.session.execute(TargetS3EodLoad.SQL_INSERT_EOD, (row[16], row[12], row[0], row[1], row[2], row[3], row[4], row[5], row[14], row[19], row[20], \
-					                                                         row[21], row[7], row[8], row[17], row[9], row[18], row[10], row[11], row[6], row[13], row[22]))
+			for row in df_tmp_join.rdd.collect():
+				self.session.execute(TargetS3EodLoad.SQL_INSERT_EOD, (row['i_date'], 
+					                                                  row['ticker'], \
+					                                                  row['adjClose'], \
+					                                                  row['adjHigh'], \
+					                                                  row['adjLow'], \
+					                                                  row['adjOpen'], \
+					                                                  row['adjVolume'], \
+					                                                  row['close'], \
+					                                                  row['company_name'], \
+					                                                  row['dayOfMonth'], \
+					                                                  row['dayOfWeek'], \
+					                                                  row['dayOfYear'], \
+					                                                  row['divCash'], \
+																	  row['high'], \
+																	  row['hour'], \
+																	  row['low'], \
+																	  row['minute'], \
+																	  row['open'], \
+																	  row['splitFactor'], \
+																	  row['date'], \
+																	  row['volume'], \
+																	  row['weekOfYear']))
+			# for row in df_tmp_join.values:
+				# print(f'{row[16]}--- {row[12]}--- {row[0]}--- {row[1]}--- {row[2]}--- {row[3]}--- {row[4]}--- {row[5]}--- {row[14]}--- {row[19]}--- {row[20]}--- \
+				# 	                                                         {row[21]}--- {row[7]}--- {row[8]}--- {row[17]}--- {row[9]}--- {row[18]}--- {row[10]}--- {row[11]}--- {row[6]}--- {row[13]}--- {row[22]}')
+				# print(f'COLUMNS: {df_tmp_join.columns}')
+				# break					                                                         
+				# self.session.execute(TargetS3EodLoad.SQL_INSERT_EOD, (row[16], row[12], row[0], row[1], row[2], row[3], row[4], row[5], row[14], row[19], row[20], \
+				# 	                                                         row[21], row[7], row[8], row[17], row[9], row[18], row[10], row[11], row[6], row[13], row[22]))
 				written_records += 1
-			logging.info(f'Written {written_records} to cassandra cluster {self.session.hosts} table')			
+			logging.info(f'Written {written_records} to cassandra cluster {self.session.hosts} table')		
