@@ -96,10 +96,24 @@ The data model I created in fairly simple and meets the need of analytical repor
 
 ![EOD prices](diag/us_stock.eod_stock_price.png)
 
-## Apache Airflow Configuratin details
+## Apache Airflow Configuration details
+The airflow configuration is split into stock symbol and end of day price loads, with the stock symbols being the basis for the end of day price feed, hence predecessors in the DAG.
+A data quality check ensures all files arew written to a tmp directory from the source before propogating the data further in the data flow:
+![dqcheck](diag/data_quality_check.png)
+
+with the following output:
+
+![dqlog](diag/dq_check_log.png)
 
 
 ## Wrap-up
+**What if** the data were expanded and increased 100 times or by 100, what happens?  Since I ran most of the work load on my local machine in standalone spark mode and cassandra instance, performance was definitley an issue, especially reading large files back and forth from AWS S3.  But ideally with scale and increased throughput I a good size cluster for spark and cassandra would be ideal, with the spark cluster having a sound data processing design, incorporating a food knowledge of the data to helo limit shuffling.
+
+
+**What if** the pipeline would need to be run on a dialy basis (say 7am)?  This is pretty simple since scheduling is a minor issue for Airflow, we would just have to bear in mind the execution date and how this would play into the staging of the S3 data which has a date stamped naming convention for buckets.
+
+
+**What if** the database needed to be accessed by 100+ people?  Since the number is not huge, again this shoud not be a problem, potentially as more users come on board the more query views (per query aggregation or per user group) could be defined to manage the different needs and loads.
 
 ## Thanks to ...
 Big thanks to **lysdexia** from whom I took and modified a basic stream writer for JSON list
