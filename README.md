@@ -11,7 +11,7 @@ Take some data from the web via scraping, use this as a basis to query a web API
 5. Update data into Apache Cassandra
 
 A nice **overview** diagram can be summed up by the DAG itself in airflow in its graphical view.  This shows the overall data pipeline flow and the various stages of the dag, namely; *web scrape read* **->** *web API read* **->** *write to S3* **->** *stock symbols & EOD prices* **->** *write to cassandra*:
-![DAG](diag/overview_dag.png)
+![DAG](diag/colourful_running_dag.png)
 
 
 Apache Airflow was used with a number of custom operators which extend the base functionality.  These include the following in the code listings within this repo and which reside in the *plugins* directory:
@@ -104,6 +104,49 @@ class StockSymbols(object):
 		    			  "s3_key_eod": "Utilities-eod-{start}-to-{end}-{ds}.json"}
 		    }
 ```
+**API reader** - the Tiingo API operator mentioned above called the API per stock symbol, per industry.  It's execute function would process the API call and write to an S3 bucket, passing the date (from and to) parameters to the API along with the frequency of the ticker feed (daily in my case):
+```
+	def execute(self, context):
+		logging.info(f'Commencing fetch of ticker data for {self.industry} industry')
+
+		entries_written = 0
+		with open(self.file_to_write, 'w') as f:
+			logging.info(f'Opening file for output -> {self.file_to_write}')
+			with JSONArrayWriter(f) as jstream:
+				for ticker in self.stock_symbols:
+					ticker_sym = ticker['symbol_code']
+					per_file_recs = 0
+					url = self.ENDPOINT.format(ticker=ticker_sym, 
+											   start_date=self.h_start_date, 
+											   end_date=self.h_end_date, 
+											   api_key=self.api_key, 
+											   frequency=self.frequency)
+					logging.info(f'url api -> {url}')
+					content = self.fetch_api(url)
+					if content:
+						logging.info(f'Writing to stream content for {ticker}')
+						for entry in content:
+							entry['ticker'] = ticker_sym
+							jstream.write(entry)
+							per_file_recs += 1
+						logging.info(f'Written {per_file_recs} records for ticker {ticker_sym}')
+						entries_written += per_file_recs
+				logging.info(f'Write completed, total written {entries_written} records')
+		logging.info(f'Writing to S3 bucket {self.s3_bucket}')
+		self.write_to_s3()
+
+
+	def write_to_s3(self):
+		bucket_to_write = f'{self.s3_bucket}-{self.execution_date}'
+		s3_key_to_write = self.s3_key.format(start=self.h_start_date, end=self.h_end_date, ds=self.execution_date)
+
+		if self.s3_hook.check_for_bucket(bucket_to_write):
+			self.s3_hook.load_file(filename=self.file_to_write, 
+								   key=s3_key_to_write, 
+								   bucket_name=bucket_to_write)
+			logging.info(f'File {s3_key_to_write} written to s3 bucket {bucket_to_write}')
+```
+
 
 ## Scope & Data
 Data was sourced from two sources:
@@ -112,7 +155,7 @@ Data was sourced from two sources:
 
 The scope of the data would include all US stock, this I got by scraping (1) bigcharts.marketwatch.com.  They had a well laid out website, by industry and fairly easily navigable.  This allowed me to use regular expressions and knowledge of the paging on consecutive pages and *flick through* the US stock by industry listing and write to a local json file.  This formed the basis of the query for the API call, so the process was, get stock symbols (tickers) from web scrape, and run these through the finance API from Tiingo to get a nice historical time series data set.
 
-Listing 1 shows the basic web scraper, which takes a industry sector code (of the form **WSJMXUSAGRI** for agriculture for example) and returns rows written and filen name written:
+The below shows the basic web scraper, which takes a industry sector code (of the form **WSJMXUSAGRI** for agriculture for example) and returns rows written and filen name written:
 
 ```	
 	def write_stock_symbols_for_industry(self, industry):
@@ -207,5 +250,5 @@ A few questions to answer ...
 **What if** the database needed to be accessed by 100+ people?  Since the number is not huge, again this shoud not be a problem, potentially as more users come on board the more query views (per query aggregation or per user group) could be defined to manage the different needs and loads.
 
 ## Thanks to ...
-Big thanks to **lysdexia** from whom I took and modified a basic stream writer for JSON list
+Big thanks to **lysdexia** from whom I took and modified a basic stream writer for JSON list (JSONArrayWriter in Tiingo operator)
 https://github.com/lysdexia/python-json-stream-writer
