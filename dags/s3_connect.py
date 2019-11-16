@@ -140,20 +140,20 @@ with DAG('S3_connect_DAG', schedule_interval='@once', catchup=True, default_args
 #         industry='Agriculture'
 #         )      
 
-    agriculture_eod_s3_to_cassandra = TargetS3EodLoad(
-        task_id='Load_Agriculture_EOD_Prices_to_cassandra',
+    financial_srv_eod_s3_to_cassandra = TargetS3EodLoad(
+        task_id='Load_FinancialServices_EOD_Prices_to_cassandra',
         aws_conn_id='aws_credential',
         s3_bucket='us-stock-data-sm',
-        s3_key=stock_symbols.US_STOCK_INDUSTRY_CODES['Agriculture']['s3_key_eod'],
-        execution_date='{{ ds }}',
+        s3_key=stock_symbols.US_STOCK_INDUSTRY_CODES['Financial Services']['s3_key_eod'],
+        execution_date='2019-11-15',
         cass_cluster=['127.0.0.1'],
-        industry='Agriculture',
-        stock_symbol_s3key=stock_symbols.US_STOCK_INDUSTRY_CODES['Agriculture']['s3_key_stock_symbols'],
+        industry='Financial Services',
+        stock_symbol_s3key=stock_symbols.US_STOCK_INDUSTRY_CODES['Financial Services']['s3_key_stock_symbols'],
         load_from=load_from_date,
         load_to=load_to_date
-        )   
+        )    
 
-    start_operator >>  agriculture_eod_s3_to_cassandra
+    start_operator >>  financial_srv_eod_s3_to_cassandra
     # agriculture_stock_symbols_to_tmp >> \
     # agriculture_stock_symbols_to_s3 >> agriculture_stock_eod_price_to_s3 >> \
     # agriculture_stock_symbols_s3_to_cassandra  >> agriculture_eod_s3_to_cassandra

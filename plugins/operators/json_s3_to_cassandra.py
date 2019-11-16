@@ -157,7 +157,6 @@ class TargetS3EodLoad(TargetDBWrite):
 			# logging.info(f'COLUMNS - {df_tmp_join.columns}')
 			written_records = 0
 			for row in df_tmp_join.rdd.collect():
-				print(f'THIS IS THE ROW - {row}')
 				self.session.execute(TargetS3EodLoad.SQL_INSERT_EOD, (row['i_date'], 
 					                                                  row['ticker'], \
 					                                                  row['adjClose'], \
