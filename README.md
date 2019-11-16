@@ -21,7 +21,90 @@ Apache Airflow was used with a number of custom operators which extend the base 
 * **TargetS3StockSymbols** - This uses the spark engine to read the staged S3 data and write the tock symbol master data to a standalone Apache Cassandra instance, this inherits from a common parent which initialises various connections. ![s3tocassandrastocksym](https://github.com/stationedabroad/Airflow_Pipeline_US_STOCK/blob/0cb35485e319f1ec8e1fa599ed8fdbbc12aa0a7b/plugins/operators/json_s3_to_cassandra.py#L50)
 * **TargetS3EodLoad** - This uses the spark engine to read stock price data, run some aggregations and joins and write to the same Cassandra instance. ![s3tocassstockprices](https://github.com/stationedabroad/Airflow_Pipeline_US_STOCK/blob/0cb35485e319f1ec8e1fa599ed8fdbbc12aa0a7b/plugins/operators/json_s3_to_cassandra.py#L95)
 
-A helper class
+A helper class was employed to manage the various stock **industries** in one location.  From here a python dictionary was used to manage file names, paths and labels as per the code listing:
+```
+class StockSymbols(object):
+
+	def __init__(self):
+		# Read config file
+		with open("plugins/helpers/config.json", "r") as f:
+		    self.config = json.load(f)
+
+		self.ALL_STOCK_SYMBOLS_URL = self.config['USTOCK']['url']
+		self.FILE_TO_WRITE = self.config['OUTPUT']
+		
+		self.US_STOCK_INDUSTRY_CODES = {
+		    "Agriculture": {"code": "WSJMXUSAGRI", 
+		    				"filename": self.FILE_TO_WRITE.format("Agriculture".replace("/", "_")), 
+		    				"s3_key_stock_symbols": 'Agriculture-{}.json',
+		    				"s3_key_eod": "Agriculture-eod-{start}-to-{end}-{ds}.json"},
+		    "Automotive": {"code": "WSJMXUSAUTO", 
+		    			   "filename": self.FILE_TO_WRITE.format("Automotive".replace("/", "_")), 
+		    			   's3_key_stock_symbols': 'Automotive-{}.json',
+		    			   "s3_key_eod": "Automotive-eod-{start}-to-{end}-{ds}.json"},
+		    "Basic Materials/Resources": {"code": "WSJMXUSBSC", 
+		    						      "filename": self.FILE_TO_WRITE.format("Basic Materials/Resources".replace("/", "_")), 
+		    						      's3_key_stock_symbols': 'BasicMaterialsResources-{}.json',
+		    						      "s3_key_eod": "Materials-Resources-eod-{start}-to-{end}-{ds}.json"},
+		    "Business/Consumer Services": {"code": "WSJMXUSCYC", 
+		    							   "filename": self.FILE_TO_WRITE.format("Business/Consumer Services".replace("/", "_")), 
+		    							   "s3_key_stock_symbols": 'Business_ConsumerServices-{}.json',
+		    							   "s3_key_eod": "Business-ConsumerServices-eod-{start}-to-{end}-{ds}.json" },
+		    "Consumer Goods": {"code": "WSJMXUSNCY", 
+		    				   "filename": self.FILE_TO_WRITE.format("Consumer Goods".replace("/", "_")), 
+		    				   "s3_key_stock_symbols": 'ConsumerGoods-{}.json',
+		    				   "s3_key_eod": "ConsumerGoods-eod-{start}-to-{end}-{ds}.json"},
+		    "Energy": {"code": "WSJMXUSENE", 
+		    		   "filename": self.FILE_TO_WRITE.format("Energy".replace("/", "_")), 
+		    		   's3_key_stock_symbols': 'Energy-{}.json',
+		    		   "s3_key_eod": "Energy-eod-{start}-to-{end}-{ds}.json"},
+		    "Financial Services": {"code": "WSJMXUSFCL", 
+		    					   "filename": self.FILE_TO_WRITE.format("Financial Services".replace("/", "_")), 
+		    					   's3_key_stock_symbols': 'FinancialServices-{}.json',
+		    					   "s3_key_eod": "FinancialServices-eod-{start}-to-{end}-{ds}.json"},
+		    "Health Care/Life Sciences": {"code": "WSJMXUSHCR", 
+		                                  "filename": self.FILE_TO_WRITE.format("Health Care/Life Sciences".replace("/", "_")), 
+		                                  's3_key_stock_symbols': 'HealthCare-LifeSciences-{}.json',
+		                                  "s3_key_eod": "HealthCare-LifeSciences-eod-{start}-to-{end}-{ds}.json"},
+		    "Industrial Goods": {"code": "WSJMXUSIDU", 
+		    					 "filename": self.FILE_TO_WRITE.format("Industrial Goods".replace("/", "_")), 
+		    					 's3_key_stock_symbols': 'IndustrialGoods-{}.json',
+		    					 "s3_key_eod": "IndustrialGoods-eod-{start}-to-{end}-{ds}.json"},
+		    "Leisure/Arts/Hospitality": {"code": "WSJMXUSLEAH", 
+		    							 "filename": self.FILE_TO_WRITE.format("Leisure/Arts/Hospitality".replace("/", "_")), 
+		    							 's3_key_stock_symbols': 'Leisure-Arts-Hospitality-{}.json',
+		    							 "s3_key_eod": "Leisure-Arts-Hospitality-eod-{start}-to-{end}-{ds}.json"},
+		    "Media/Entertainment": {"code": "WSJMXUSMENT", 
+		    						"filename": self.FILE_TO_WRITE.format("Media/Entertainment".replace("/", "_")), 
+		    						's3_key_stock_symbols': 'MediaEntertainment-{}.json',
+		    						"s3_key_eod": "Media-Entertainment-eod-{start}-to-{end}-{ds}.json"},
+		    "Real Estate/Construction": {"code": "WSJMXUSRECN", 
+		     							 "filename": self.FILE_TO_WRITE.format("Real Estate/Construction".replace("/", "_")), 
+		     							 's3_key_stock_symbols': 'RealEstate-Construction-{}.json',
+		     							 "s3_key_eod": "RealEstate-Construction-eod-{start}-to-{end}-{ds}.json"},
+		    "Retail/Wholesale": {"code": "WSJMXUSRTWS", 
+		    					 "filename": self.FILE_TO_WRITE.format("Retail/Wholesale".replace("/", "_")), 
+		    					 's3_key_stock_symbols': 'RetailWholesale-{}.json',
+		    					 "s3_key_eod": "Retail-Wholesale-eod-{start}-to-{end}-{ds}.json"},
+		    "Technology": {"code": "WSJMXUSTEC", 
+		    			   "filename": self.FILE_TO_WRITE.format("Technology".replace("/", "_")), 
+		    			   's3_key_stock_symbols': 'Technology-{}.json',
+		    			   "s3_key_eod": "Technology-eod-{start}-to-{end}-{ds}.json"},
+		    "Telecommunication Services": {"code": "WSJMXUSTEL", 
+		                                   "filename": self.FILE_TO_WRITE.format("Telecommunication Services".replace("/", "_")), 
+		                                   's3_key_stock_symbols': 'TelecommunicationServices-{}.json',
+		                                   "s3_key_eod": "TelecommunicationServices-eod-{start}-to-{end}-{ds}.json"},
+		    "Transportation/Logistics": {"code": "WSJMXUSTRSH", 
+		    							 "filename": self.FILE_TO_WRITE.format("Transportation/Logistics".replace("/", "_")), 
+		    							 's3_key_stock_symbols': 'TransportationLogistics-{}.json',
+		    							 "s3_key_eod": "Transportation-Logistics-eod-{start}-to-{end}-{ds}.json"},
+		    "Utilities": {"code": "WSJMXUSUTI", 
+		    			  "filename": self.FILE_TO_WRITE.format("Utilities".replace("/", "_")), 
+		    			  's3_key_stock_symbols': 'Utilities-{}.json',
+		    			  "s3_key_eod": "Utilities-eod-{start}-to-{end}-{ds}.json"}
+		    }
+```
+
 ## Scope & Data
 Data was sourced from two sources:
 1. For stock symbols by industry (complete listing hopefully) the website: http://bigcharts.marketwatch.com
@@ -80,17 +163,18 @@ Listing 1 shows the basic web scraper, which takes a industry sector code (of th
 Writing to a local machine tmp directory, the output would be ready to upload into an S3 bucket.  The picture shows a log line generated and written to the airflow job log per API call:
 ![pic1](/diag/read_to_tmp.png)
 
-
+The S3 bucket contained all the source files, staged for further use in vairou ways, in this instance onward to Cassandra for analysis:
+![fig](diag/s3_bucket.png)
 
 ## Exploration of Data
 The data is fairly well formed coming from an API.  Some old ticker symbols may not return data but are still returned from the webscrape, these just return an error in the log but it is useful to see when and in which industry companies are falling on or off the stock market radar.  This pipeline shows an historic load, but can be run **daily** in batch mode also, in fact it is designed to do just that.  For the historical load I defined variables in airflow, but if it was to run in daily batch mode a shcedule interval could be set up using the DAG properties.
 
-The data set for the year across all US stock/industry returns approximately 3-4m rows of data. A simple flow of a single industry of stocks would look like thisin airflow:
+The data set for the year across all US stock/industry returns approximately 2-3m rows of data. A simple flow of a single industry of stocks would look like thisin airflow:
 ![single Industry pipeline](diag/automotive_flow_end_to_end.png)
 
 
 ## Data Model Definition
-The data model I created in fairly simple and meets the need of analytical reporting.  The S3 staging allows ML models and data analysis to be carried out also, bu primarily the cassandra instance is used to store the data and farm it out at different aggregations, combining different datasets for end user analysis.  An example of the model definition is below in two tables, stock symbols and end of day prices (Which combines stock symbol data):
+The data model I created in fairly simple and meets the need of analytical reporting.  The S3 staging allows ML models and data analysis to be carried out also, bu primarily the cassandra instance is used to store the data and farm it out at different aggregations, combining different datasets for end user analysis.  An example of the model definition is below in two tables, **stock symbols** and **end of day prices** (Which combines stock symbol data).  EOD prices has been enhanced using spark transforms with various extra information around dates/times (month of year, week of year etc):
 
 ![stock table](diag/us_stock.stock_symbols.png)
 
@@ -107,7 +191,14 @@ with the following output:
 
 
 ## Wrap-up
-**What if** the data were expanded and increased 100 times or by 100, what happens?  Since I ran most of the work load on my local machine in standalone spark mode and cassandra instance, performance was definitley an issue, especially reading large files back and forth from AWS S3.  But ideally with scale and increased throughput I a good size cluster for spark and cassandra would be ideal, with the spark cluster having a sound data processing design, incorporating a food knowledge of the data to helo limit shuffling.
+The result was a well strctured stock symbols table, ready to act as a sort of master data in Cassandra for analysis:
+![stocksymboltab](diag/stock_symbols_10.png)
+
+And also finally in terms of the data for end of day prices, using CQL in the shell did not work since the data set was quite large, so I had to use the pyspark shell to run the query and confirm what airflow was telling me, that all the records had loaded into Cassandra:
+![eod](diag/eod_cass_RECs.png)
+
+A few questions to answer ...
+**What if** the data were expanded and increased 100 times or by 100, what happens?  Since I ran most of the work load on my local machine in standalone spark mode and cassandra instance, performance was definitley an issue, especially reading large files back and forth from AWS S3.  But ideally with scale and increased throughput I a good size cluster for spark and cassandra would be ideal, with the spark cluster having a sound data processing design, incorporating a good knowledge of the data to help limit shuffling.  I actually found that incrasing the memory parameter of the spark driver helped to process the data, as one of the larger loads (**Load_FinancialServices_EOD_Prices_to_cassandra**) was giving a Java Heap memory error.  I thus increased the driver-memory and used the full cores on my laptop and it finished processing the whole data set.  
 
 
 **What if** the pipeline would need to be run on a dialy basis (say 7am)?  This is pretty simple since scheduling is a minor issue for Airflow, we would just have to bear in mind the execution date and how this would play into the staging of the S3 data which has a date stamped naming convention for buckets.
